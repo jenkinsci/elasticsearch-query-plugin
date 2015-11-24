@@ -1,5 +1,5 @@
-.settings
-target
-work
+.settings/
+target/
+work/
 .classpath
 .project

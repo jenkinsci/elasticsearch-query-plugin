@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<org.jenkinsci.plugins.logstashquery.LogstashQueryBuilder_-DescriptorImpl plugin="logstash-query@1.0-SNAPSHOT">
-  <host>logstash.kernelfire.com/search</host>
-  <user>luser</user>
-  <password>c4llfire</password>
-  <useSSL>true</useSSL>
-</org.jenkinsci.plugins.logstashquery.LogstashQueryBuilder_-DescriptorImpl>
