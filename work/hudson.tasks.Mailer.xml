@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<hudson.tasks.Mailer_-DescriptorImpl plugin="mailer@1.10">
+  <hudsonUrl>http://localhost:8080/jenkins/</hudsonUrl>
+  <smtpAuthUsername>opsapp@callfire.com</smtpAuthUsername>
+  <smtpAuthPassword>V8C3sPvS4gvayshYeJyIhN1u/K7kCuOG8NuYqPx6Ia8=</smtpAuthPassword>
+  <smtpHost>smtp.googlemail.com</smtpHost>
+  <useSsl>true</useSsl>
+  <charset>UTF-8</charset>
+</hudson.tasks.Mailer_-DescriptorImpl>
