@@ -146,12 +146,8 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
     public void perform(Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener) throws AbortException {
 		//get
 		final String user = getDescriptor().getUser();
-		//print
-		listener.getLogger().println("user: " + user);
 		//get
 		final String password = getDescriptor().getPassword();
-		//print
-		listener.getLogger().println("password: " + user);
 		//validate global user and password config
 		if(isEmpty(user) != isEmpty(password)){
 			throw new AbortException("user and password must both be provided or empty! Please set value of user and password in Jenkins > Manage Jenkins > Configure System > Elasticsearch Query Builder");
