@@ -23,14 +23,20 @@
  * 
 */
 
-package org.jenkinsci.plugins.logstashquery;
+package org.jenkinsci.plugins.elasticsearchquery;
+import static hudson.util.FormValidation.error;
+import static hudson.util.FormValidation.ok;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.io.IOUtils.closeQuietly;
+import static org.apache.commons.lang.StringUtils.deleteWhitespace;
+import static org.apache.commons.lang.StringUtils.endsWith;
+import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.isEmpty;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.apache.commons.lang.time.DateUtils.addDays;
 import hudson.AbortException;
 import hudson.Extension;
@@ -73,11 +79,11 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 /**
- * Simple builder that queries logstash indexes in elastic search to use for downstream notifications
+ * Simple builder that queries elasticsearch to use for downstream notifications
  *
  * @author Michael Epstein 
  */
-public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
+public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildStep {
 	
     private final static FastDateFormat LOGSTASH_INDEX_FORMAT = FastDateFormat.getInstance("yyyy.MM.dd"); 
     private final static String LOGSTASH_INDEX_PREFIX = "logstash-";
@@ -90,7 +96,7 @@ public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public LogstashQueryBuilder(String query, String aboveOrBelow, Long threshold, Long since, String units) {
+    public ElasticsearchQueryBuilder(String query, String aboveOrBelow, Long threshold, Long since, String units) {
         this.query = query;
         this.aboveOrBelow = aboveOrBelow;
         this.threshold = threshold;
@@ -148,7 +154,7 @@ public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
 		listener.getLogger().println("password: " + user);
 		//validate global user and password config
 		if(isEmpty(user) != isEmpty(password)){
-			throw new AbortException("user and password must both be provided or empty! Please set value of user and password in Jenkins > Manage Jenkins > Configure System > Logstash Query Builder");
+			throw new AbortException("user and password must both be provided or empty! Please set value of user and password in Jenkins > Manage Jenkins > Configure System > Elasticsearch Query Builder");
 		}
 		
 		final String creds = isEmpty(user) ? "" : user + ":" + password + "@";
@@ -159,7 +165,7 @@ public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
 		listener.getLogger().println("host: " + host);
 		//validate global host config
 		if(isEmpty(host)){
-			throw new AbortException("Host cannot be empty! Please set value of host in Jenkins > Manage Jenkins > Configure System > Logstash Query Builder");
+			throw new AbortException("Host cannot be empty! Please set value of host in Jenkins > Manage Jenkins > Configure System > ElasticSearch Query Builder");
 		}
         
 		//Calculate time in past for search and indexes
@@ -170,13 +176,13 @@ public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
         //use past to calculate specific indexes to search similar to kibana 3
         //ie if we are looking back to yesterday we dont need to search every index 
         //only today and yesterday
-        final String logstashIndexes = buildLogstashIndexes(past);
-        listener.getLogger().println("logstashIndexes: " + logstashIndexes);
+        final String queryIndexes = isNotBlank(getDescriptor().getIndexes()) ? getDescriptor().getIndexes() : buildLogstashIndexes(past);
+        listener.getLogger().println("queryIndexes: " + queryIndexes);
         
         //we have all the parts now build the query URL
         String url = null;
 		try {
-			url = "http" + (getDescriptor().getUseSSL() ? "s" : "") + "://" + creds + getDescriptor().getHost() + "/" + logstashIndexes + "/_count?pretty=true&q=" + new URLCodec().encode(query + dateClause);
+			url = "http" + (getDescriptor().getUseSSL() ? "s" : "") + "://" + creds + getDescriptor().getHost() + "/" + queryIndexes + "/_count?pretty=true&q=" + new URLCodec().encode(query + dateClause);
 		} catch (EncoderException ee) {
 			throw new RuntimeException(ee);
 		}
@@ -248,7 +254,7 @@ public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
     }
 
     /**
-     * Descriptor for {@link LogstashQueryBuilder}. Used as a singleton.
+     * Descriptor for {@link ElasticsearchQueryBuilder}. Used as a singleton.
      * The class is marked as public so that it can be accessed from views.
      */
     @Extension // This indicates to Jenkins that this is an implementation of an extension point.
@@ -261,6 +267,7 @@ public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
          * If you don't want fields to be persisted, use <tt>transient</tt>.
          */
         private String host;
+        private String indexes;
         private String user;
         private String password;
         private boolean useSSL;
@@ -273,7 +280,7 @@ public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
         }
 
         /**
-         * Performs on-the-fly validation of the form field 'name'.
+         * Performs on-the-fly validation of the form field 'query'.
          *
          * @param value
          *      This parameter receives the value that the user has typed.
@@ -286,9 +293,22 @@ public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
          */
         public FormValidation doCheckQuery(@QueryParameter String value)
                 throws IOException, ServletException {
-            if (isEmpty(value))
+            if (isBlank(value))
                 return FormValidation.error("Please set a query");
-            return FormValidation.ok();
+            return ok();
+        }
+        
+        public FormValidation doCheckIndexes(@QueryParameter String value)
+                throws IOException, ServletException {
+            if (isNotBlank(value)){
+            	if(!deleteWhitespace(value).equals(value)){
+            		return error("Indexes cannot contain whitespace");
+            	}
+            	if(endsWith(value, ",")){
+            		return error("Indexes cannot end with a comma");
+            	}
+            }
+            return ok();
         }
         
         public FormValidation doCheckThreshold(@QueryParameter Long value)
@@ -329,7 +349,7 @@ public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
          * This human readable name is used in the configuration screen.
          */
         public String getDisplayName() {
-            return "Logstash Query";
+            return "Elasticsearch Query";
         }
 
         @Override
@@ -337,6 +357,7 @@ public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
             // To persist global configuration information,
             // set that to properties and call save().
         	host = formData.getString("host");
+        	indexes = formData.getString("indexes");
         	user = formData.getString("user");
         	password = formData.getString("password");
         	useSSL = formData.getBoolean("useSSL");
@@ -349,6 +370,10 @@ public class LogstashQueryBuilder extends Builder implements SimpleBuildStep {
         public String getHost() {
             return host;
         }
+
+		public String getIndexes() {
+			return indexes;
+		}
 
 		public String getUser() {
 			return user;

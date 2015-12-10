@@ -3,5 +3,5 @@
   This view is used to render the installed plugins page.
 -->
 <div>
-  This plugin is used to query logstash
+  This plugin is used to query <a href="https://www.elastic.co/products/elasticsearch">elasticsearch</a>
 </div>
