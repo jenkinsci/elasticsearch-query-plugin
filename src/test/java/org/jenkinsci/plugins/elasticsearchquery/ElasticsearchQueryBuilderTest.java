@@ -47,4 +47,12 @@ public class ElasticsearchQueryBuilderTest {
 		assertEquals(ERROR, new DescriptorImpl().doCheckThreshold(null).kind);
 		assertEquals(OK, new DescriptorImpl().doCheckThreshold(0L).kind);
 	}
+	
+	@Test
+	public void testDoCheckQueryRequestTimeout() throws Exception {
+		assertEquals(ERROR, new DescriptorImpl().doCheckQueryRequestTimeout(-1).kind);
+		assertEquals(ERROR, new DescriptorImpl().doCheckQueryRequestTimeout(0).kind);
+		assertEquals(ERROR, new DescriptorImpl().doCheckQueryRequestTimeout(null).kind);
+		assertEquals(OK, new DescriptorImpl().doCheckQueryRequestTimeout(10).kind);
+	}
 }

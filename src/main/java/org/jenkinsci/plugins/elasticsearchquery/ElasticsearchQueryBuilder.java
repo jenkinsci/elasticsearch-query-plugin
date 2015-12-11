@@ -37,7 +37,9 @@ import static org.apache.commons.lang.StringUtils.endsWith;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.isEmpty;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
+import static org.apache.commons.lang.math.NumberUtils.toInt;
 import static org.apache.commons.lang.time.DateUtils.addDays;
+import static org.apache.http.params.HttpConnectionParams.setSoTimeout;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;
@@ -186,6 +188,8 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
 
         HttpClient httpClient = new DefaultHttpClient();
         final HttpGet httpget = new HttpGet(url);
+        final Integer queryRequestTimeout = getDescriptor().getQueryRequestTimeout();
+        setSoTimeout(httpClient.getParams(), queryRequestTimeout == null || queryRequestTimeout < 1 ? getDescriptor().defaultQueryRequestTimeout() : queryRequestTimeout);
         HttpResponse response = null;
 
 		try {
@@ -267,6 +271,7 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
         private String user;
         private String password;
         private boolean useSSL;
+        private Integer queryRequestTimeout;
         /**
          * In order to load the persisted global configuration, you have to 
          * call load() in the constructor.
@@ -320,6 +325,13 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
                 return FormValidation.error("Please set a since value");
             return FormValidation.ok();
         }
+        
+        public FormValidation doCheckQueryRequestTimeout(@QueryParameter Integer value)
+                throws IOException, ServletException {
+            if (value == null || value < 1)
+                return FormValidation.error("Please set a value greater than 0");
+            return FormValidation.ok();
+        }
 
         public boolean isApplicable(@SuppressWarnings("rawtypes") Class<? extends AbstractProject> aClass) {
             // Indicates that this builder can be used with all kinds of project types 
@@ -340,6 +352,10 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
         	items.add(DAYS.name());
             return items;
         }
+        
+        public Integer defaultQueryRequestTimeout() {
+        	return 120000;
+        }
 
         /**
          * This human readable name is used in the configuration screen.
@@ -357,6 +373,8 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
         	user = formData.getString("user");
         	password = formData.getString("password");
         	useSSL = formData.getBoolean("useSSL");
+        	queryRequestTimeout = toInt((String) formData.get("queryRequestTimeout"), defaultQueryRequestTimeout());
+        	
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this, like setUseFrench)
             save();
@@ -381,6 +399,10 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
 
 		public boolean getUseSSL() {
 			return useSSL;
+		}
+
+		public Integer getQueryRequestTimeout() {
+			return queryRequestTimeout;
 		}
         
     }
