@@ -146,6 +146,12 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
 
 	@Override
     public void perform(Run<?,?> build, FilePath workspace, Launcher launcher, TaskListener listener) throws AbortException {
+		//print our arguments
+		listener.getLogger().println("Query: " + query);
+		listener.getLogger().println("Fail when: " + aboveOrBelow);
+		listener.getLogger().println("Threshold: " + threshold);
+		listener.getLogger().println("Since: " + since);
+		listener.getLogger().println("Time units: " + units);
 		//get
 		final String user = getDescriptor().getUser();
 		//get
