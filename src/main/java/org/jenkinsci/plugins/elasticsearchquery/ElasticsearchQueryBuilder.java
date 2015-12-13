@@ -37,6 +37,8 @@ import static org.apache.commons.lang.StringUtils.endsWith;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.isEmpty;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
+import static org.apache.commons.lang.StringUtils.replace;
+import static org.apache.commons.lang.StringUtils.trim;
 import static org.apache.commons.lang.math.NumberUtils.toInt;
 import static org.apache.commons.lang.time.DateUtils.addDays;
 import static org.apache.http.params.HttpConnectionParams.setSoTimeout;
@@ -99,8 +101,8 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public ElasticsearchQueryBuilder(String query, String aboveOrBelow, Long threshold, Long since, String units) {
-        this.query = query;
-        this.aboveOrBelow = aboveOrBelow;
+        this.query = trim(query);
+        this.aboveOrBelow = trim(aboveOrBelow);
         this.threshold = threshold;
         this.since = since;
         this.units = units;
@@ -176,7 +178,7 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
         Long past = currentTimeMillis() - MILLISECONDS.convert(since, TimeUnit.valueOf(units));
         
         //create the date clause to be added the query to restrict by relative time
-        final String dateClause = "AND @timestamp:>="+past;
+        final String dateClause = " AND @timestamp:>="+past;
         //use past to calculate specific indexes to search similar to kibana 3
         //ie if we are looking back to yesterday we dont need to search every index 
         //only today and yesterday
@@ -190,7 +192,7 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
 		} catch (EncoderException ee) {
 			throw new RuntimeException(ee);
 		}
-		listener.getLogger().println("url: " + url);
+		listener.getLogger().println("query url: " + url);
 
         HttpClient httpClient = new DefaultHttpClient();
         final HttpGet httpget = new HttpGet(url);
@@ -238,6 +240,9 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
 						closeQuietly(instream);
         	 
         	      }
+        	      
+        	      listener.getLogger().println("search url: " + replace(url, "_count", "_search"));
+        	      
         	      final String abortMessage = threshold +". Failing build!\n"
   	    		  		+ "URL: " + url +"\n"
   	    		  		+ "response content: " + content;
@@ -374,12 +379,12 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
             // To persist global configuration information,
             // set that to properties and call save().
-        	host = formData.getString("host");
-        	indexes = formData.getString("indexes");
+        	host = trim(formData.getString("host"));
+        	indexes = trim(formData.getString("indexes"));
         	user = formData.getString("user");
-        	password = formData.getString("password");
+        	password = trim(formData.getString("password"));
         	useSSL = formData.getBoolean("useSSL");
-        	queryRequestTimeout = toInt((String) formData.get("queryRequestTimeout"), defaultQueryRequestTimeout());
+        	queryRequestTimeout = toInt(trim(formData.getString("queryRequestTimeout")), defaultQueryRequestTimeout());
         	
             // ^Can also use req.bindJSON(this, formData);
             //  (easier when there are many fields; need set* methods for this, like setUseFrench)
