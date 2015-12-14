@@ -26,6 +26,7 @@
 package org.jenkinsci.plugins.elasticsearchquery;
 import static hudson.util.FormValidation.error;
 import static hudson.util.FormValidation.ok;
+import static java.lang.Long.parseLong;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -39,6 +40,7 @@ import static org.apache.commons.lang.StringUtils.isEmpty;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.apache.commons.lang.StringUtils.replace;
 import static org.apache.commons.lang.StringUtils.trim;
+import static org.apache.commons.lang.math.NumberUtils.isNumber;
 import static org.apache.commons.lang.math.NumberUtils.toInt;
 import static org.apache.commons.lang.time.DateUtils.addDays;
 import static org.apache.http.params.HttpConnectionParams.setSoTimeout;
@@ -323,17 +325,18 @@ public class ElasticsearchQueryBuilder extends Builder implements SimpleBuildSte
             return ok();
         }
         
-        public FormValidation doCheckThreshold(@QueryParameter Long value)
+        public FormValidation doCheckThreshold(@QueryParameter String value)
                 throws IOException, ServletException {
-            if (value == null)
-                return FormValidation.error("Please set a threshold");
+        	value = trim(value);
+            if (!isNumber(value) || parseLong(value) < 0)
+                return FormValidation.error("Please set a threshold greater than or equal to 0");
             return FormValidation.ok();
         }
         
         public FormValidation doCheckSince(@QueryParameter Long value)
                 throws IOException, ServletException {
-            if (value == null)
-                return FormValidation.error("Please set a since value");
+            if (value == null || value < 1)
+                return FormValidation.error("Please set a since value greater than 0");
             return FormValidation.ok();
         }
         

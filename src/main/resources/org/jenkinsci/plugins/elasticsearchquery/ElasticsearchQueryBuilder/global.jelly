@@ -1,7 +1,7 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
   <f:section title="Elastic Search Query Builder">
-  <f:entry title="Host" field="host">
+  <f:entry title="Host (required)" field="host">
     <f:textbox />
   </f:entry>
   <f:entry title="Indexes" field="indexes">

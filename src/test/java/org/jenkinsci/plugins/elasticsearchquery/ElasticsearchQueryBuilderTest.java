@@ -39,13 +39,20 @@ public class ElasticsearchQueryBuilderTest {
 	@Test
 	public void testDoCheckSince() throws Exception {
 		assertEquals(ERROR, new DescriptorImpl().doCheckSince(null).kind);
-		assertEquals(OK, new DescriptorImpl().doCheckSince(0L).kind);
+		assertEquals(ERROR, new DescriptorImpl().doCheckSince(0L).kind);
+		assertEquals(OK, new DescriptorImpl().doCheckSince(1L).kind);
 	}
 	
 	@Test
 	public void testDoCheckThreshold() throws Exception {
 		assertEquals(ERROR, new DescriptorImpl().doCheckThreshold(null).kind);
-		assertEquals(OK, new DescriptorImpl().doCheckThreshold(0L).kind);
+		assertEquals(ERROR, new DescriptorImpl().doCheckThreshold("").kind);
+		assertEquals(ERROR, new DescriptorImpl().doCheckThreshold("   ").kind);
+		assertEquals(ERROR, new DescriptorImpl().doCheckThreshold(" 5 6 ").kind);
+		assertEquals(ERROR, new DescriptorImpl().doCheckThreshold("asdf").kind);
+		assertEquals(OK, new DescriptorImpl().doCheckThreshold("  6 ").kind);
+		assertEquals(OK, new DescriptorImpl().doCheckThreshold("1").kind);
+		assertEquals(OK, new DescriptorImpl().doCheckThreshold("0").kind);
 	}
 	
 	@Test
